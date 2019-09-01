@@ -784,40 +784,43 @@ public class RNCWebViewManager extends SimpleViewManager<WebView> {
     }
 
     // Fix WebRTC permission request error.
+    @TargetApi(21)
     @Override
     public void onPermissionRequest(final PermissionRequest request) {
-      String[] requestedResources = request.getResources();
-      ArrayList<String> permissions = new ArrayList<>();
-      ArrayList<String> grantedPermissions = new ArrayList<String>();
-      for (int i = 0; i < requestedResources.length; i++) {
-        if (requestedResources[i].equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
-          permissions.add(Manifest.permission.RECORD_AUDIO);
-        } else if (requestedResources[i].equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
-          permissions.add(Manifest.permission.CAMERA);
+      if (Build.VERSION.SDK_INT >= 21) {
+        String[] requestedResources = request.getResources();
+        ArrayList<String> permissions = new ArrayList<>();
+        ArrayList<String> grantedPermissions = new ArrayList<String>();
+        for (int i = 0; i < requestedResources.length; i++) {
+          if (requestedResources[i].equals(PermissionRequest.RESOURCE_AUDIO_CAPTURE)) {
+            permissions.add(Manifest.permission.RECORD_AUDIO);
+          } else if (requestedResources[i].equals(PermissionRequest.RESOURCE_VIDEO_CAPTURE)) {
+            permissions.add(Manifest.permission.CAMERA);
+          }
+          // TODO: RESOURCE_MIDI_SYSEX, RESOURCE_PROTECTED_MEDIA_ID.
         }
-        // TODO: RESOURCE_MIDI_SYSEX, RESOURCE_PROTECTED_MEDIA_ID.
-      }
 
-      for (int i = 0; i < permissions.size(); i++) {
-        if (ContextCompat.checkSelfPermission(mReactContext, permissions.get(i)) != PackageManager.PERMISSION_GRANTED) {
-          continue;
+        for (int i = 0; i < permissions.size(); i++) {
+          if (ContextCompat.checkSelfPermission(mReactContext, permissions.get(i)) != PackageManager.PERMISSION_GRANTED) {
+            continue;
+          }
+          if (permissions.get(i).equals(Manifest.permission.RECORD_AUDIO)) {
+            grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
+          } else if (permissions.get(i).equals(Manifest.permission.CAMERA)) {
+            grantedPermissions.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
+          }
         }
-        if (permissions.get(i).equals(Manifest.permission.RECORD_AUDIO)) {
-          grantedPermissions.add(PermissionRequest.RESOURCE_AUDIO_CAPTURE);
-        } else if (permissions.get(i).equals(Manifest.permission.CAMERA)) {
-          grantedPermissions.add(PermissionRequest.RESOURCE_VIDEO_CAPTURE);
-        }
-      }
 
-      if (grantedPermissions.isEmpty()) {
-        request.deny();
-      } else {
-        String[] grantedPermissionsArray = new String[grantedPermissions.size()];
-        grantedPermissionsArray = grantedPermissions.toArray(grantedPermissionsArray);
-        request.grant(grantedPermissionsArray);
+        if (grantedPermissions.isEmpty()) {
+          request.deny();
+        } else {
+          String[] grantedPermissionsArray = new String[grantedPermissions.size()];
+          grantedPermissionsArray = grantedPermissions.toArray(grantedPermissionsArray);
+          request.grant(grantedPermissionsArray);
+        }
       }
     }
-
+	
     @Override
     public void onProgressChanged(WebView webView, int newProgress) {
       super.onProgressChanged(webView, newProgress);
